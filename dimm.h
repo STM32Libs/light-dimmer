@@ -18,14 +18,14 @@ class Dimm
         void init();
         void set_level(uint8_t channel,uint16_t value);
     public:
+        Serial      *pser;
+        InterruptIn syncIrq;
+        uint32_t    intCount;
+    public:
         PwmOut  pwm1;
         PwmOut  pwm2;
         PwmOut  pwm3;
         PwmOut  pwm4;
-    public:
-        Serial      *pser;
-        InterruptIn syncIrq;
-        uint32_t    intCount;
 };
 
 #endif /*__DIMM__*/

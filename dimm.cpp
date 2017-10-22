@@ -27,9 +27,6 @@ Dimm::Dimm(Serial *ps,PinName Sync, PinName ch1, PinName ch2, PinName ch3, PinNa
 {
     intCount = 0;
 
-    syncIrq.rise(&sync_irq);
-    syncIrq.mode(PullNone);
-    syncIrq.enable_irq();
 
     handler = this;
 
@@ -58,6 +55,10 @@ Dimm::Dimm(Serial *ps,PinName Sync, PinName ch1, PinName ch2, PinName ch3, PinNa
 void Dimm::init()
 {
 
+    syncIrq.rise(&sync_irq);
+    syncIrq.mode(PullNone);
+    NVIC_SetPriority(EXTI15_10_IRQn,1);
+    syncIrq.enable_irq();
 }
 
 void Dimm::set_level(uint8_t channel,uint16_t value)
