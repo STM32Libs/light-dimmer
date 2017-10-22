@@ -14,11 +14,13 @@ class Dimm
     
 
     public:
-        Dimm(Serial *ps,PinName Sync, PinName ch1, PinName ch2, PinName ch3, PinName ch4);
+        Dimm(Serial *ps,PinName Rel, PinName Sync, PinName ch1, PinName ch2, PinName ch3, PinName ch4);
         void init();
         void set_level(uint8_t channel,uint16_t value);
-    public:
+        void handle_message(uint8_t *data,uint8_t size);
+        public:
         Serial      *pser;
+        DigitalOut  relay;
         InterruptIn syncIrq;
         uint32_t    intCount;
     public:

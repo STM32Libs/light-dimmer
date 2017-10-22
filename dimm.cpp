@@ -17,14 +17,16 @@ void sync_irq()
     handler->intCount++;
 }
 
-Dimm::Dimm(Serial *ps,PinName Sync, PinName ch1, PinName ch2, PinName ch3, PinName ch4):
+Dimm::Dimm(Serial *ps,PinName Rel,PinName Sync, PinName ch1, PinName ch2, PinName ch3, PinName ch4):
                 pser(ps),
+                relay(Rel),
                 syncIrq(Sync),
                 pwm1(ch1),
                 pwm2(ch2),
                 pwm3(ch3),
                 pwm4(ch4)
 {
+    relay = 1;//Off
     intCount = 0;
 
 
@@ -76,4 +78,81 @@ void Dimm::set_level(uint8_t channel,uint16_t value)
     {
         latches[channel] = value;
     }
+}
+
+//delay in ISR context : 100K => 14.18 ms
+void cpu_delay()
+{
+    volatile uint32_t count = 0;
+    for(uint32_t i=0;i<100000;i++)
+    {
+        count++;
+    }
+}
+
+void Dimm::handle_message(uint8_t *data,uint8_t size)
+{
+    if(size == 6)//--------------------- Light for All -----------------------------
+    {
+        uint16_t light_val = data[4];
+        light_val <<=8;
+        light_val += data[5];
+        //pser->printf("Light for All : %d\r",light_val);
+
+        set_level(0,light_val);
+        set_level(1,light_val);
+        set_level(2,light_val);
+        set_level(3,light_val);
+
+        if(light_val == 0 )
+        {
+            //we got a flash on switch off as well !!!
+            cpu_delay();//wait one cycle so that we're sure all pwm pulses are at 0
+            syncIrq.disable_irq();//avoid floating jitter
+            relay = 1;//off
+        }
+        else
+        {
+            //switching on the relay will flash any way even with value of 1 and delaying the start of sync handling
+            //switch off, no sync irg, make sure all outputs are low before switching on (set level only prepare for next sync irq)
+            //TIM1->CCR1 = 0;            TIM1->CCR2 = 0;            TIM1->CCR3 = 0;            TIM1->CCR4 = 0;
+            //cpu_delay();//wait more than 1 pwm period to make sure outputs are at 0
+            relay = 0;//switch on
+            //should wait here many cycles to avoid light flash
+            //probably due to wrong zero detection on start of waves
+            //with 90 ms (6 x delay) still a smale wiggle when setting 0x7D0 from 0
+            //this flash comes even when setting 0x0001 from 0, spontaneous relay-Dimmer flash
+            //~ 90 ms 
+            cpu_delay();cpu_delay();cpu_delay();cpu_delay();cpu_delay();cpu_delay();
+            
+            syncIrq.enable_irq();
+        }
+    }
+    else if(size == 7)//--------------------- One Channel -----------------------------
+    {
+        uint8_t chan = data[4];
+        uint16_t light_val = data[5];
+        light_val <<=8;
+        light_val += data[6];
+        //pser->printf("Light for chan %d : %d\r",chan, light_val);
+        set_level(chan,light_val);
+    }
+    else
+    {
+        uint8_t subId = data[4];
+        if(subId == 0x01)//Chan Array
+        {
+            uint8_t NbChannels = (size -5) / 2;
+            uint8_t * pData = &data[5];
+            for(int i=0;i<NbChannels;i++)
+            {
+                uint16_t light_val = *pData++;
+                light_val <<= 8;
+                light_val += *pData++;
+                //pser->printf("Light for chan %d : %d\r",i, light_val);
+                set_level(i,light_val);
+            }
+        }
+    }
+
 }
