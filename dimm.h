@@ -14,8 +14,9 @@ class Dimm
     
 
     public:
-        Dimm(Serial *ps,PinName Rel, PinName Sync, PinName ch1, PinName ch2, PinName ch3, PinName ch4);
-        void init();
+        Dimm(Serial *ps,PinName Rel, PinName Sync, PinName ch1, PinName ch2, PinName ch3, PinName ch4,
+                        PinName ch5, PinName ch6, PinName ch7, PinName ch8);
+void init();
         void set_level(uint8_t channel,uint16_t value);
         void handle_message(uint8_t *data,uint8_t size);
         public:
@@ -28,6 +29,10 @@ class Dimm
         PwmOut  pwm2;
         PwmOut  pwm3;
         PwmOut  pwm4;
-};
+        PwmOut  pwm5;
+        PwmOut  pwm6;
+        PwmOut  pwm7;
+        PwmOut  pwm8;
+    };
 
 #endif /*__DIMM__*/

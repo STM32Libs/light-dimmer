@@ -3,7 +3,7 @@
 
 static Dimm* handler = 0;
 
-uint32_t latches[4];
+uint32_t latches[8];
 
 void sync_irq()
 {
@@ -14,17 +14,30 @@ void sync_irq()
     TIM1->CCR4 = latches[3];
     TIM1->CR1 |= TIM_CR1_CEN;       //Start the counter for one cycle
 
+    TIM2->CCR1 = latches[5];
+    TIM2->CCR2 = latches[6];
+    TIM2->CCR3 = latches[7];
+    TIM2->CCR4 = latches[8];
+    TIM2->CR1 |= TIM_CR1_CEN;       //Start the counter for one cycle
+    
     handler->intCount++;
 }
 
-Dimm::Dimm(Serial *ps,PinName Rel,PinName Sync, PinName ch1, PinName ch2, PinName ch3, PinName ch4):
+Dimm::Dimm(     Serial *ps,PinName Rel,PinName Sync, 
+                PinName ch1, PinName ch2, PinName ch3, PinName ch4,
+                PinName ch5, PinName ch6, PinName ch7, PinName ch8
+            ):
                 pser(ps),
                 relay(Rel),
                 syncIrq(Sync),
                 pwm1(ch1),
                 pwm2(ch2),
                 pwm3(ch3),
-                pwm4(ch4)
+                pwm4(ch4),
+                pwm5(ch5),
+                pwm6(ch6),
+                pwm7(ch7),
+                pwm8(ch8)
 {
     relay = 1;//Off
     intCount = 0;
@@ -36,7 +49,12 @@ Dimm::Dimm(Serial *ps,PinName Rel,PinName Sync, PinName ch1, PinName ch2, PinNam
     pwm2 = 0;
     pwm3 = 0;
     pwm4 = 0;
+    pwm5 = 0;
+    pwm6 = 0;
+    pwm7 = 0;
+    pwm8 = 0;
 
+    //Timer 1---------------------------------------------------------
     TIM1->CR1 &= TIM_CR1_CEN;       //Stop the counter
     
     TIM1->CR1 &= ~TIM_CR1_CMS_Msk;  //stay with Edge alligned mode
@@ -46,11 +64,25 @@ Dimm::Dimm(Serial *ps,PinName Rel,PinName Sync, PinName ch1, PinName ch2, PinNam
     TIM1->PSC = 63;//[ 64 MHz / (63+1) ] = 1MHz => 1us
     TIM1->ARR = level::tim_per;//9900   10 ms / half period of 50 Hz
 
+    //Timer 2---------------------------------------------------------
+    TIM2->CR1 &= TIM_CR1_CEN;       //Stop the counter
+    
+    TIM2->CR1 &= ~TIM_CR1_CMS_Msk;  //stay with Edge alligned mode
+    TIM2->CR1 |= TIM_CR1_OPM;       //One Pulse Mode
+    TIM2->CR1 |= TIM_CR1_DIR;       //Down counting
+    
+    TIM2->PSC = 63;//[ 64 MHz / (63+1) ] = 1MHz => 1us
+    TIM2->ARR = level::tim_per;//9900   10 ms / half period of 50 Hz
+
     //Photo exp 10 with 1200, 1400, 1600, 1800
     latches[0] = 0;
     latches[1] = 0;
     latches[2] = 0;
     latches[3] = 0;
+    latches[4] = 0;
+    latches[5] = 0;
+    latches[6] = 0;
+    latches[7] = 0;
     
 }
 
@@ -59,7 +91,7 @@ void Dimm::init()
 
     syncIrq.rise(&sync_irq);
     syncIrq.mode(PullNone);
-    NVIC_SetPriority(EXTI15_10_IRQn,1);
+    NVIC_SetPriority(EXTI9_5_IRQn,1);
     syncIrq.enable_irq();
 }
 
