@@ -16,9 +16,13 @@ void sync_irq()
 
     TIM2->CCR1 = latches[5];
     TIM2->CCR2 = latches[6];
-    TIM2->CCR3 = latches[7];
-    TIM2->CCR4 = latches[8];
+    //TIM2->CCR3 = latches[7];
+    //TIM2->CCR4 = latches[8];
     TIM2->CR1 |= TIM_CR1_CEN;       //Start the counter for one cycle
+
+    TIM3->CCR3 = latches[7];
+    TIM3->CCR4 = latches[8];
+    TIM3->CR1 |= TIM_CR1_CEN;       //Start the counter for one cycle
     
     handler->intCount++;
 }
@@ -74,6 +78,16 @@ Dimm::Dimm(     Serial *ps,PinName Rel,PinName Sync,
     TIM2->PSC = 63;//[ 64 MHz / (63+1) ] = 1MHz => 1us
     TIM2->ARR = level::tim_per;//9900   10 ms / half period of 50 Hz
 
+    //Timer 3---------------------------------------------------------
+    TIM3->CR1 &= TIM_CR1_CEN;       //Stop the counter
+    
+    TIM3->CR1 &= ~TIM_CR1_CMS_Msk;  //stay with Edge alligned mode
+    TIM3->CR1 |= TIM_CR1_OPM;       //One Pulse Mode
+    TIM3->CR1 |= TIM_CR1_DIR;       //Down counting
+    
+    TIM3->PSC = 63;//[ 64 MHz / (63+1) ] = 1MHz => 1us
+    TIM3->ARR = level::tim_per;//9900   10 ms / half period of 50 Hz
+    
     //Photo exp 10 with 1200, 1400, 1600, 1800
     latches[0] = 0;
     latches[1] = 0;
@@ -106,7 +120,7 @@ void Dimm::set_level(uint8_t channel,uint16_t value)
         value = level::tim_per;
     }
     //uint16_t delay = level::tim_per - (value - level::min);
-    if(channel <= 3)
+    if(channel <= 7)
     {
         latches[channel] = value;
     }
