@@ -5,6 +5,8 @@ static Dimm* handler = 0;
 
 uint32_t latches[8];
 
+#define DEBUG_DIMMER 0
+
 void sync_irq()
 {
     //Timer down counting, small values get small pulses at the end, big pulses start sooner
@@ -14,14 +16,14 @@ void sync_irq()
     TIM1->CCR4 = latches[3];
     TIM1->CR1 |= TIM_CR1_CEN;       //Start the counter for one cycle
 
-    TIM2->CCR1 = latches[5];
-    TIM2->CCR2 = latches[6];
-    //TIM2->CCR3 = latches[7];
-    //TIM2->CCR4 = latches[8];
+    TIM2->CCR1 = latches[4];
+    TIM2->CCR2 = latches[5];
+    //TIM2->CCR3 = latches[6];
+    //TIM2->CCR4 = latches[7];
     TIM2->CR1 |= TIM_CR1_CEN;       //Start the counter for one cycle
 
-    TIM3->CCR3 = latches[7];
-    TIM3->CCR4 = latches[8];
+    TIM3->CCR3 = latches[6];
+    TIM3->CCR4 = latches[7];
     TIM3->CR1 |= TIM_CR1_CEN;       //Start the counter for one cycle
     
     handler->intCount++;
@@ -143,7 +145,9 @@ void Dimm::handle_message(uint8_t *data,uint8_t size)
         uint16_t light_val = data[5];
         light_val <<=8;
         light_val += data[6];
-        //pser->printf("Light for All : %d\r",light_val);
+        #if(DEBUG_DIMMER == 1)
+        pser->printf("Light for All : %d\r",light_val);
+        #endif
 
         set_level(0,light_val);
         set_level(1,light_val);
@@ -184,7 +188,9 @@ void Dimm::handle_message(uint8_t *data,uint8_t size)
         uint16_t light_val = data[6];
         light_val <<=8;
         light_val += data[7];
-        //pser->printf("Light for chan %d : %d\r",chan, light_val);
+        #if(DEBUG_DIMMER == 1)
+        pser->printf("Light only for chan %d : %d\r",chan, light_val);
+        #endif
         set_level(chan,light_val);
     }
     else
@@ -199,7 +205,9 @@ void Dimm::handle_message(uint8_t *data,uint8_t size)
                 uint16_t light_val = *pData++;
                 light_val <<= 8;
                 light_val += *pData++;
-                //pser->printf("Light for chan %d : %d\r",i, light_val);
+                #if(DEBUG_DIMMER == 1)
+                pser->printf("chan id %d : %d\r",i, light_val);
+                #endif
                 set_level(i,light_val);
             }
         }
