@@ -138,17 +138,21 @@ void cpu_delay()
 
 void Dimm::handle_message(uint8_t *data,uint8_t size)
 {
-    if(size == 6)//--------------------- Light for All -----------------------------
+    if(size == 7)//--------------------- Light for All -----------------------------
     {
-        uint16_t light_val = data[4];
+        uint16_t light_val = data[5];
         light_val <<=8;
-        light_val += data[5];
+        light_val += data[6];
         //pser->printf("Light for All : %d\r",light_val);
 
         set_level(0,light_val);
         set_level(1,light_val);
         set_level(2,light_val);
         set_level(3,light_val);
+        set_level(4,light_val);
+        set_level(5,light_val);
+        set_level(6,light_val);
+        set_level(7,light_val);
 
         if(light_val == 0 )
         {
@@ -174,22 +178,22 @@ void Dimm::handle_message(uint8_t *data,uint8_t size)
             syncIrq.enable_irq();
         }
     }
-    else if(size == 7)//--------------------- One Channel -----------------------------
+    else if(size == 8)//--------------------- One Channel -----------------------------
     {
-        uint8_t chan = data[4];
-        uint16_t light_val = data[5];
+        uint8_t chan = data[5];
+        uint16_t light_val = data[6];
         light_val <<=8;
-        light_val += data[6];
+        light_val += data[7];
         //pser->printf("Light for chan %d : %d\r",chan, light_val);
         set_level(chan,light_val);
     }
     else
     {
-        uint8_t subId = data[4];
+        uint8_t subId = data[5];
         if(subId == 0x01)//Chan Array
         {
-            uint8_t NbChannels = (size -5) / 2;
-            uint8_t * pData = &data[5];
+            uint8_t NbChannels = (size -6) / 2;
+            uint8_t * pData = &data[6];
             for(int i=0;i<NbChannels;i++)
             {
                 uint16_t light_val = *pData++;
@@ -199,6 +203,7 @@ void Dimm::handle_message(uint8_t *data,uint8_t size)
                 set_level(i,light_val);
             }
         }
+        //else chanlist not yet supported
     }
 
 }
